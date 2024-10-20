@@ -5,12 +5,12 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Activity, ClipboardList, Clock, Loader2, RotateCw, Send } from "lucide-react"
+import { Activity, CheckCircleIcon, ClipboardList, Clock, Loader2, RotateCw, Send, XCircleIcon } from "lucide-react"
+import { Badge } from "@/components/ui/badge";
 
 interface Message {
     role: string
     content: string
-    id: string
 }
 
 interface Task {
@@ -184,6 +184,15 @@ export default function Component() {
         } finally {
             setIsThinking(false)
         }
+
+        setTimeout(async () => {
+            setIsThinking(true)
+            console.log("I'm thinking...")
+            await fetchTask()
+            setIsThinking(false)
+            console.log("I'm done...")
+        }
+            , 1000)
     }
 
     const handleApproveTask = async () => {
@@ -210,6 +219,26 @@ export default function Component() {
         }
     }
 
+    const agentAndUserMessages = (task: Task, sort: "asc" | "desc" = "desc") => {
+        const messages = task.messages.filter((message) => message.role === "assistant" || message.role === "user")
+        return sort === "asc" ? messages : messages.reverse()
+    }
+
+    const renderMessages = (task: Task) => {
+        return agentAndUserMessages(task).map((message, index) => (
+            (message.role === "assistant") ? (
+                (message.content) ? (
+                    <MessageCard key={index} message={message} />
+                ) : (
+                    (message.tool_calls && message?.tool_calls.length > 0) ? (
+                        <MessageCard key={index} message={{ role: message.role, content: "Please wait while I take some actions..." }} />
+                    ) : null
+                )) : (
+                <MessageCard key={index} message={message} />
+            )
+        ))
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-purple-700 to-blue-900 p-8 flex flex-col items-center">
             <h1 className="text-4xl font-bold text-white mb-8">Agentex AI</h1>
@@ -231,19 +260,25 @@ export default function Component() {
             </div>
 
             {isThinking && (
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    className="mb-8 w-full max-w-2xl"
-                >
-                    <Card className="bg-white/10 backdrop-blur-lg border-none shadow-lg">
-                        <CardContent className="p-6 flex items-center space-x-4">
-                            <Loader2 className="h-6 w-4 text-blue-400 animate-spin" />
-                            <p className="text-white font-semibold">AI is thinking...</p>
-                        </CardContent>
-                    </Card>
-                </motion.div>
+                <>
+                    <div>
+                        <Loader2 className="h-6 w-4 text-blue-400 animate-spin" />
+                        <p className="text-white font-semibold">Let me think...</p>
+                    </div>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="mb-8 w-full max-w-2xl"
+                    >
+                        <Card className="bg-white/10 backdrop-blur-lg border-none shadow-lg">
+                            <CardContent className="p-6 flex items-center space-x-4">
+                                <Loader2 className="h-6 w-4 text-blue-400 animate-spin" />
+                                <p className="text-white font-semibold">Let me think...</p>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                </>
             )}
 
             {error && (
@@ -295,26 +330,34 @@ export default function Component() {
                         </CardContent>
                     </Card>
                     {task && (
-                        <div className="flex flex gap-2 mb-4 justify-end">
-                            <Button className="bg-primary hover:bg-primary-dark" onClick={handleApproveTask}>
-                                Approve Response
-                            </Button>
-                            <Button className="bg-red-500 hover:bg-red-600" onClick={handleCancelTask}>
-                                Cancel Task
-                            </Button>
-                        </div>
+                        (task?.state?.status === "COMPLETED" || task?.state?.status === "FAILED") ? (
+                            <div className="flex flex gap-2 mb-4 justify-end">
+                                <Badge
+                                    variant={task?.state?.status === "COMPLETED" ? "default" : "destructive"}
+                                    className="flex items-center gap-1"
+                                >
+                                    {task?.state?.status === "COMPLETED" ? (
+                                        <CheckCircleIcon className="h-3 w-3" aria-hidden="true" />
+                                    ) : (
+                                        <XCircleIcon className="h-3 w-3" aria-hidden="true" />
+                                    )}
+                                    <span>{task?.state?.status === "COMPLETED" ? "AI Response Approved" : "AI Encountered Failure"}</span>
+                                </Badge>
+                            </div>
+                        ) : (
+                            <div className="flex flex gap-2 mb-4 justify-end">
+                                <Button className={`bg-primary focus:ring-2 focus:ring-offset-2 ${task?.state?.status === "COMPLETED" ? "disabled" : ""}`} onClick={handleApproveTask}>
+                                    Approve Response
+                                </Button>
+                                <Button className="bg-red-500 hover:bg-red-600" onClick={handleCancelTask}>
+                                    Cancel Task
+                                </Button>
+                            </div>
+                        )
                     )}
                     {task.messages && task.messages.length > 0 && (
                         <AnimatePresence>
-                            {task.messages.filter((message) => message.role === "assistant").reverse().map((message) => (
-                                (message.content) ? (
-                                    <MessageCard key={message.id} message={message} />
-                                ) : (
-                                    (message.tool_calls && message?.tool_calls.length > 0) ? (
-                                        <MessageCard key={message.id} message={{ id: message.id, role: message.role, content: "Please wait while I take some actions..." }} />
-                                    ) : null
-                                )
-                            ))}
+                            {renderMessages(task)}
                         </AnimatePresence>
                     )}
                 </div>
