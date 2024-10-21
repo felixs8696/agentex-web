@@ -1,271 +1,109 @@
-'use client'
-
-import { useState, useEffect, useRef } from 'react'
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Circle, CheckCircle2, XCircle, Send } from "lucide-react"
+import Link from "next/link"
 
-const fetchTaskStatus = async (taskId: number) => {
-  try {
-    const res = await fetch(`/api/get-task?task_id=${taskId}`);
-    if (!res.ok) {
-      throw new Error('Failed to fetch task status');
-    }
-    return await res.json();
-  } catch (error) {
-    console.error(error);
-    return null;
-  }
+type Task = {
+  id: string
+  title: string
+  status: "pending" | "completed" | "failed"
 }
 
-const createTask = async (taskInput: string, agentName: string, agentVersion: string, requireApproval: boolean) => {
-  try {
-    const res = await fetch(`/api/create-task`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        agent_name: agentName,
-        agent_version: agentVersion,
-        prompt: taskInput,
-        require_approval: requireApproval,
-      }),
-    });
+const initialTasks: Task[] = [
+  { id: "1", title: "Analyze market trends", status: "completed" },
+  { id: "2", title: "Develop new product features", status: "pending" },
+  { id: "3", title: "Optimize database queries", status: "failed" },
+  { id: "4", title: "Create marketing campaign", status: "pending" },
+  { id: "5", title: "Update user documentation", status: "completed" },
+]
 
-    if (!res.ok) {
-      throw new Error('Failed to create task');
-    }
-    return await res.json();
-  } catch (error) {
-    console.error(error);
-    return null;
-  }
-}
+export default function Component() {
+  const [tasks, setTasks] = useState<Task[]>(initialTasks)
+  const [prompt, setPrompt] = useState("")
 
-const modifyTask = async (taskId: string, modificationType: string, prompt = '') => {
-  try {
-    const res = await fetch(`/api/modify-task`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        taskId,
-        modificationType,
-        prompt,
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error('Failed to modify the task');
-    }
-
-    return await res.json();
-  } catch (error) {
-    console.error(error);
-    return null;
-  }
-};
-
-export default function TaskManager() {
-  const [taskInput, setTaskInput] = useState('')
-  const [selectedAgent, setSelectedAgent] = useState('hello-world')
-  const [selectedAgentVersion, setSelectedAgentVersion] = useState('0.0.10')
-  const [requireApproval, setRequireApproval] = useState(false)
-  const [currentTask, setCurrentTask] = useState<any>(null)
-  const [taskOutput, setTaskOutput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [hasInitialResponse, setHasInitialResponse] = useState(false)
-  const [newInstructions, setNewInstructions] = useState('')
-  const [showInstructionsInput, setShowInstructionsInput] = useState(false)
-  const outputRef = useRef<HTMLDivElement>(null); // Ref for the task output container
-
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout
-
-    if (currentTask) {
-      const pollTask = async () => {
-        setIsLoading(true)
-        const updatedTask = await fetchTaskStatus(currentTask.id)
-        if (updatedTask) {
-          setCurrentTask(updatedTask)
-          setTaskOutput(JSON.stringify(updatedTask, null, 2))
-          setIsLoading(false)
-          setHasInitialResponse(true)
-
-          if (updatedTask.status === 'completed') {
-            clearInterval(intervalId)
-          }
-        }
-      }
-
-      pollTask()
-      intervalId = setInterval(pollTask, 3000)
-    }
-
-    return () => clearInterval(intervalId)
-  }, [currentTask])
-
-  useEffect(() => {
-    if (outputRef.current) {
-      // Scroll to the bottom of the output container when taskOutput changes
-      outputRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [taskOutput]);
-
-  const handleCreateTask = async () => {
-    if (taskInput && selectedAgent) {
-      const newTask = await createTask(taskInput, selectedAgent, selectedAgentVersion, requireApproval)
-      if (newTask) {
-        setCurrentTask(newTask)
-        setTaskInput('')
-        setHasInitialResponse(false)
-        setShowInstructionsInput(false)
-      }
+  const getStatusIcon = (status: Task["status"]) => {
+    switch (status) {
+      case "pending":
+        return <Circle className="w-4 h-4 text-yellow-500" />
+      case "completed":
+        return <CheckCircle2 className="w-4 h-4 text-green-500" />
+      case "failed":
+        return <XCircle className="w-4 h-4 text-red-500" />
     }
   }
 
-  const handleAddInstructions = () => {
-    setShowInstructionsInput(true)
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (prompt.trim()) {
+      const newTask: Task = {
+        id: Date.now().toString(),
+        title: prompt,
+        status: "pending",
+      }
+      setTasks([newTask, ...tasks])
+      setPrompt("")
+    }
   }
-
-  const handleSubmitInstructions = async () => {
-    if (newInstructions && currentTask) {
-      const modifiedTask = await modifyTask(currentTask.id, 'instruct', newInstructions);
-      if (modifiedTask) {
-        setCurrentTask(modifiedTask);
-        setNewInstructions('');
-        setShowInstructionsInput(false);
-      }
-    }
-  };
-
-  const handleApproveTask = async () => {
-    if (currentTask) {
-      const modifiedTask = await modifyTask(currentTask.id, 'approve');
-      if (modifiedTask) {
-        setCurrentTask(null);
-        setTaskOutput('');
-        setHasInitialResponse(false);
-        setShowInstructionsInput(false);
-      }
-    }
-  };
-
-  const handleCancelTask = async () => {
-    if (currentTask) {
-      const modifiedTask = await modifyTask(currentTask.id, 'cancel');
-      if (modifiedTask) {
-        setCurrentTask(null);
-        setTaskOutput('');
-        setHasInitialResponse(false);
-        setShowInstructionsInput(false);
-      }
-    }
-  };
 
   return (
-    <div className="min-h-screen bg-white p-4 flex flex-col">
-      <Card className="flex-grow flex flex-col shadow-lg border border-gray-200">
-        <CardHeader className="bg-gray-50 border-b border-gray-200">
-          <CardTitle className="text-3xl font-bold text-center text-gray-800">AI Task Manager</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 flex-grow flex flex-col">
-          <div className="space-y-4 mb-6">
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+    <div className="flex h-screen bg-background">
+      {/* Sidebar */}
+      <div className="w-64 border-r bg-muted/50">
+        <div className="p-4">
+          <h2 className="text-lg font-semibold mb-4">Your Tasks</h2>
+        </div>
+        <ScrollArea className="h-[calc(100vh-80px)]">
+          <div className="px-4">
+            {tasks.map((task) => (
+              <Link
+                key={task.id}
+                href={`/task/${task.id}`}
+                className="flex items-center p-2 rounded-md hover:bg-muted mb-1"
+              >
+                {getStatusIcon(task.status)}
+                <span className="ml-2 text-sm truncate">{task.title}</span>
+              </Link>
+            ))}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1 p-4">
+          {/* This is where your existing page content will go */}
+          <p className="text-muted-foreground">Select a task from the sidebar to view details</p>
+        </div>
+        <div className="p-4 border-t">
+          <form onSubmit={handleSubmit} className="flex items-center">
+            <div className="relative flex-1">
               <Input
-                placeholder="Enter task or instructions"
-                value={taskInput}
-                onChange={(e) => setTaskInput(e.target.value)}
-                className="flex-grow bg-white text-gray-800 placeholder-gray-400 border border-gray-300"
+                type="text"
+                placeholder="Type your task here..."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                className="pr-10 rounded-full"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleSubmit(e)
+                  }
+                }}
               />
-              <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-                <SelectTrigger className="w-full sm:w-[180px] bg-white text-gray-800 border border-gray-300">
-                  <SelectValue placeholder="Select Agent" />
-                </SelectTrigger>
-                <SelectContent className="bg-white text-gray-800 border border-gray-300">
-                  <SelectItem value="hello-world">hello-world</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={selectedAgentVersion} onValueChange={setSelectedAgentVersion}>
-                <SelectTrigger className="w-full sm:w-[180px] bg-white text-gray-800 border border-gray-300">
-                  <SelectValue placeholder="Select Version" />
-                </SelectTrigger>
-                <SelectContent className="bg-white text-gray-800 border border-gray-300">
-                  <SelectItem value="0.0.10">0.0.10</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="requireApproval"
-                  checked={requireApproval}
-                  onChange={() => setRequireApproval(!requireApproval)}
-                  className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                />
-                <label htmlFor="requireApproval" className="text-gray-700">Require Approval</label>
-              </div>
+              <Button
+                type="submit"
+                size="icon"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 rounded-full w-8 h-8"
+              >
+                <Send className="w-4 h-4" />
+                <span className="sr-only">Send</span>
+              </Button>
             </div>
-            <Button onClick={handleCreateTask} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
-              Create New Task
-            </Button>
-          </div>
-          {currentTask && (
-            <div className="space-y-4 mb-6">
-              <div className="text-lg font-semibold text-gray-700">
-                Agent is working on task ID: {currentTask.id}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button onClick={handleAddInstructions} className="flex-grow bg-emerald-600 hover:bg-emerald-700 text-white">
-                  Add Instructions
-                </Button>
-                <Button onClick={handleApproveTask} className="flex-grow bg-amber-600 hover:bg-amber-700 text-white">
-                  Approve
-                </Button>
-                <Button onClick={handleCancelTask} className="flex-grow bg-rose-600 hover:bg-rose-700 text-white">
-                  Cancel
-                </Button>
-              </div>
-              {showInstructionsInput && (
-                <div className="flex space-x-2">
-                  <Input
-                    placeholder="Enter new instructions"
-                    value={newInstructions}
-                    onChange={(e) => setNewInstructions(e.target.value)}
-                    className="flex-grow bg-white text-gray-800 placeholder-gray-400 border border-gray-300"
-                  />
-                  <Button onClick={handleSubmitInstructions} className="bg-blue-600 hover:bg-blue-700 text-white">
-                    Submit
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-          {(currentTask && currentTask?.messages?.length > 0) && (
-            <Card className="bg-blue-50 border-blue-200 mb-4">
-              <CardHeader>
-                <CardTitle className="text-blue-800">Agent Response:</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-blue-700">{currentTask.messages[currentTask.messages.length - 1].content}</p>
-              </CardContent>
-            </Card>
-          )
-          }
-          <div className="bg-gray-100 border border-gray-200 rounded p-4 flex-grow overflow-y-auto">
-            {isLoading && !hasInitialResponse ? (
-              <Skeleton className="h-24 w-full" />
-            ) : (
-              <div className="whitespace-pre-wrap break-words text-sm text-gray-800" ref={outputRef}>
-                {taskOutput || 'No task output yet.'}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          </form>
+        </div>
+      </div>
     </div>
   )
 }
