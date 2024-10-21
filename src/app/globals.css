@@ -48,6 +48,7 @@ body {
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
@@ -88,7 +89,63 @@ body {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.glow-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+}
+
+.glow-card .inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 4px;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.glow-card::before {
+  content: "";
+  display: block;
+  background: linear-gradient(90deg,
+      rgba(255, 0, 0, 0.75) 0%,
+      /* Red */
+      rgba(255, 127, 0, 0.75) 16.67%,
+      /* Orange */
+      rgba(255, 255, 0, 0.75) 33.34%,
+      /* Yellow */
+      rgba(0, 255, 0, 0.75) 50%,
+      /* Green */
+      rgba(0, 0, 255, 0.75) 66.67%,
+      /* Blue */
+      rgba(75, 0, 130, 0.75) 83.34%,
+      /* Indigo */
+      rgba(148, 0, 211, 0.75) 100%
+      /* Violet */
+    );
+  height: 500px;
+  width: 500px;
+  /* transform: translate(0); */
+  position: absolute;
+  animation: rotate 8s linear forwards infinite;
+  z-index: 0;
+  /* top: 50%; */
+  /* transform-origin: top center; */
 }
