@@ -2,12 +2,14 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, X, Sparkles, ClipboardList, Activity, Clock, Loader2 } from 'lucide-react'
+import { Send, X, Sparkles, ClipboardList, Activity, Clock, Loader2, Hash, Copy } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { createTask, getTask, modifyTask } from '@/lib/api/tasks'
 import { getAgent } from '@/lib/api/agents'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { useToast } from "@/hooks/use-toast"
 
 // Define polling interval
 const POLL_INTERVAL = 1000;
@@ -47,6 +49,7 @@ interface PageProps {
 
 // Main Page component
 const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
+    const { toast } = useToast()
 
     // State variables
     const [isThinking, setIsThinking] = useState(false);
@@ -59,6 +62,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
     const [lastUpdateTime, setLastUpdateTime] = useState<string>("N/A");
     const [isApproving, setIsApproving] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [isCopied, setIsCopied] = useState(false);
 
     // Fetch task and agent data on initial render
     useEffect(() => {
@@ -201,17 +205,29 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
 
     useEffect(scrollToBottom, [task])
 
+    const copyTaskId = () => {
+        navigator.clipboard.writeText(taskId).then(() => {
+            setIsCopied(true)
+            toast({
+                title: "Copied!",
+                description: `Task ID ${taskId} copied to clipboard`,
+            })
+            setTimeout(() => setIsCopied(false), 2000)
+        })
+    }
+
     return (
-        <div className="flex flex-col h-screen bg-gray-100 p-4">
+        <div className="flex flex-col h-full bg-gray-100 p-4">
             {task && (
                 <>
-                    <TaskInfoCard task={task} lastUpdateTime={lastUpdateTime} />
+                    {/* <TaskInfoCard task={task} lastUpdateTime={lastUpdateTime} /> */}
                     <div className="flex-grow overflow-y-auto p-4 space-y-4">
                         <AnimatePresence>
                             {renderMessages(task)}
                         </AnimatePresence>
                         <div ref={messagesEndRef} />
                     </div>
+                    <Badges toast={toast} isCopied={isCopied} task={task} lastUpdateTime={lastUpdateTime} copyTaskId={copyTaskId} />
                     <div className="w-full">
                         <form onSubmit={handleSubmit} className="mb-6">
                             <div className="flex gap-2">
@@ -221,8 +237,9 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                                     value={userInput}
                                     onChange={(e) => setUserInput(e.target.value)}
                                     className="flex-grow bg-white"
+                                    disabled={task?.status === "FAILED" || task?.status === "COMPLETED"}
                                 />
-                                <Button type="submit" disabled={isThinking}>
+                                <Button type="submit" disabled={task?.status === "FAILED" || task?.status === "COMPLETED" || isThinking}>
                                     {isThinking ? (
                                         <>
                                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -243,6 +260,53 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
         </div>
     )
 }
+
+const getStatusColor = (status: string | undefined) => {
+    switch (status) {
+        case "RUNNING":
+            return "bg-blue-100 text-blue-800 border-blue-300"
+        case "COMPLETED":
+            return "bg-green-100 text-green-800 border-green-300"
+        case "FAILED":
+            return "bg-red-100 text-red-800 border-red-300"
+        default:
+            return "bg-gray-100 text-gray-800 border-gray-300"
+    }
+}
+
+const Badges: React.FC<{ toast: any; isCopied: boolean; task: Task; lastUpdateTime: string; copyTaskId: () => void }> = ({ isCopied, task, lastUpdateTime, copyTaskId }) => (
+    task && (
+        <div className="flex flex-wrap items-center justify-between gap-2 p-3">
+            <Badge variant="secondary" className="text-sm flex items-center space-x-1 pr-1">
+                <Hash className="w-4 h-4" />
+                <span className="font-mono">Task ID: {task?.id.substring(0, 8)}</span>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`h-6 w-6 ml-1 transition-colors ${isCopied
+                        ? "bg-green-100 text-green-800 hover:bg-green-200 hover:text-green-900"
+                        : "hover:bg-gray-200 hover:text-gray-900"
+                        }`}
+                    onClick={copyTaskId}
+                >
+                    <Copy className="h-3 w-3" />
+                    <span className="sr-only">Copy Task ID</span>
+                </Button>
+            </Badge>
+            <div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
+                <Badge
+                    className={`text-sm flex items-center gap-1 border ${getStatusColor(task.status)}`}
+                >
+                    Status: {task.status}
+                </Badge>
+                <Badge variant="outline" className="text-sm flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    Last Updated: {lastUpdateTime}
+                </Badge>
+            </div>
+        </div>
+    )
+)
 
 // Task information component
 const TaskInfoCard: React.FC<{ task: Task; lastUpdateTime: string }> = ({ task, lastUpdateTime }) => (

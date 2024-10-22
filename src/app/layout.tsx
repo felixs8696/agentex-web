@@ -6,7 +6,7 @@ import "./globals.css"
 import { Sidebar, SidebarContent, SidebarProvider } from "@/components/ui/sidebar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
-import { Circle, CheckCircle2, XCircle, Cpu, PenSquare, Menu } from "lucide-react"
+import { Circle, CheckCircle2, XCircle, Cpu, PenSquare, Menu, CircleEllipsis } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Link from "next/link"
 import { listTasks } from "@/lib/api/tasks"
@@ -26,10 +26,17 @@ const geistMono = localFont({
 interface Task {
   id: string
   prompt: string
-  status: "pending" | "completed" | "failed"
+  status: string
 }
 
-const BREAKPOINT = "lg"
+const BREAKPOINT = "md"
+
+const statusIcons: Record<string, { icon: React.ComponentType, color: string }> = {
+  COMPLETED: { icon: CheckCircle2, color: 'text-green-500' },
+  FAILED: { icon: XCircle, color: 'text-red-500' },
+  RUNNING: { icon: CircleEllipsis, color: 'text-blue-500' },
+  PENDING: { icon: Circle, color: 'text-yellow-500' },
+};
 
 const SidebarContents = ({ tasks }: { tasks: Task[] }) => (
   <div className="h-full bg-background">
@@ -51,14 +58,21 @@ const SidebarContents = ({ tasks }: { tasks: Task[] }) => (
         <h3 className="mb-2 px-2 text-lg font-semibold tracking-tight">
           Tasks
         </h3>
-        {tasks.map((task) => (
-          <Link key={task.id} href={`/tasks/${task.id}`} className="flex items-center p-2 rounded-md hover:bg-muted mb-1 w-full text-left">
-            {/* {task.status === "completed" && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-            {task.status === "failed" && <XCircle className="w-4 h-4 text-red-500" />} */}
-            <Circle className="w-4 h-4 text-yellow-500" />
-            <span className="ml-2 text-sm truncate">{task.prompt}</span>
-          </Link>
-        ))}
+        {tasks.map((task) => {
+          const { icon: StatusIcon, color } = statusIcons[task.status] || { icon: CircleEllipsis, color: 'text-blue-500' }; // Fallback to default if status is missing
+          return (
+            <Link
+              key={task.id}
+              href={`/tasks/${task.id}`}
+              className="flex items-center p-2 rounded-md hover:bg-muted mb-1 w-full text-left"
+            >
+              <div className="flex-shrink-0">
+                <StatusIcon className={`w-4 h-4 ${color}`} />
+              </div>
+              <span className="ml-2 text-sm truncate flex-grow">{task.prompt}</span>
+            </Link>
+          )
+        })}
       </div>
     </ScrollArea>
   </div>
