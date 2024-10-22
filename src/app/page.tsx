@@ -11,6 +11,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useTasks } from '@/context/TasksContext';
+
 
 interface Agent {
     id: string;
@@ -34,6 +36,7 @@ export default function ComposePage() {
     const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
     const [groupedAgents, setGroupedAgents] = useState<GroupedAgent[]>([])
     const router = useRouter()
+    const { refreshTasks } = useTasks()
 
     useEffect(() => {
         const fetchAgents = async () => {
@@ -98,6 +101,7 @@ export default function ComposePage() {
                 }
 
                 const task = await response.json()
+                refreshTasks();
                 router.push(`/tasks/${task.id}`)
             } catch (error) {
                 console.error('Error creating task:', error)
@@ -159,7 +163,7 @@ export default function ComposePage() {
                             <Button
                                 type="submit"
                                 size="icon"
-                                className="absolute right-3 bottom-3 rounded-full w-10 h-10"
+                                className="absolute right-2 top-2 rounded-lg w-8 h-8"
                             >
                                 <Send className="w-5 h-5" />
                                 <span className="sr-only">Send</span>

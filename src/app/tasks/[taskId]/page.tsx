@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, X, Sparkles, ClipboardList, Activity, Clock, Loader2, Hash, Copy } from 'lucide-react'
+import { Send, X, Sparkles, ClipboardList, Activity, Clock, Loader2, Hash, Copy, Check, Ellipsis } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { createTask, getTask, modifyTask } from '@/lib/api/tasks'
 import { getAgent } from '@/lib/api/agents'
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from "@/hooks/use-toast"
+import { useTasks } from '@/context/TasksContext'
 
 // Define polling interval
 const POLL_INTERVAL = 1000;
@@ -50,6 +51,7 @@ interface PageProps {
 // Main Page component
 const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
     const { toast } = useToast()
+    const { setSelectedTask } = useTasks();
 
     // State variables
     const [isThinking, setIsThinking] = useState(false);
@@ -73,6 +75,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                     if (fetchedTask) {
                         const fetchedAgent = await getAgent(fetchedTask.agent_id);
                         setTask(fetchedTask);
+                        setSelectedTask(fetchedTask);
                         setAgent(fetchedAgent);
                     } else {
                         setError("Failed to fetch task");
@@ -94,6 +97,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
 
                 if (updatedTask && JSON.stringify(updatedTask) !== JSON.stringify(task)) {
                     setTask(updatedTask);
+                    setSelectedTask(updatedTask);
                     setKey(prevKey => prevKey + 1);
                     setLastUpdateTime(new Date().toLocaleTimeString());
                 }
@@ -216,6 +220,8 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
         })
     }
 
+    const taskInTerminalState = task?.status === "FAILED" || task?.status === "COMPLETED" || task?.status === "CANCELED";
+
     return (
         <div className="flex flex-col h-full bg-gray-100 p-4">
             {task && (
@@ -237,9 +243,9 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                                     value={userInput}
                                     onChange={(e) => setUserInput(e.target.value)}
                                     className="flex-grow bg-white"
-                                    disabled={task?.status === "FAILED" || task?.status === "COMPLETED"}
+                                    disabled={taskInTerminalState}
                                 />
-                                <Button type="submit" disabled={task?.status === "FAILED" || task?.status === "COMPLETED" || isThinking}>
+                                <Button type="submit" disabled={taskInTerminalState || isThinking}>
                                     {isThinking ? (
                                         <>
                                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -250,6 +256,20 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                                             <Send className="h-4 w-4 mr-2" />
                                             Send
                                         </>
+                                    )}
+                                </Button>
+                                <Button className="bg-green-600 hover:bg-green-700" onClick={handleApproveTask} disabled={taskInTerminalState || isApproving}>
+                                    {isApproving ? (
+                                        <Ellipsis className="h-4 w-4 animate-pulse" />
+                                    ) : (
+                                        <Check className="h-4 w-4" />
+                                    )}
+                                </Button>
+                                <Button className="bg-red-500 hover:bg-red-600" onClick={handleCancelTask} disabled={taskInTerminalState || isCancelling}>
+                                    {isCancelling ? (
+                                        <Ellipsis className="h-4 w-4 animate-pulse" />
+                                    ) : (
+                                        <X className="h-4 w-4" />
                                     )}
                                 </Button>
                             </div>
@@ -295,6 +315,7 @@ const Badges: React.FC<{ toast: any; isCopied: boolean; task: Task; lastUpdateTi
             </Badge>
             <div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
                 <Badge
+                    variant="outline"
                     className={`text-sm flex items-center gap-1 border ${getStatusColor(task.status)}`}
                 >
                     Status: {task.status}
