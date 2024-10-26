@@ -2,6 +2,7 @@
 
 import localFont from "next/font/local"
 import "./globals.css"
+import '@mdxeditor/editor/style.css'
 import { Sidebar, SidebarContent, SidebarProvider } from "@/components/ui/sidebar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
