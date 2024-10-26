@@ -125,7 +125,7 @@ export default function ComposePage() {
                                     variant={selectedAgent?.name === group.name ? "default" : "outline"}
                                     className="h-auto py-2 px-3 text-sm w-full"
                                 >
-                                    <div className="flex flex-col items-start text-left">
+                                    <div className="flex flex-col items-start text-left break-all">
                                         <span className="font-medium">{group.name}</span>
                                         <span className="text-xs text-muted-foreground">v{selectedAgent ? selectedAgent.version : group.versions[0].version}</span>
                                     </div>
