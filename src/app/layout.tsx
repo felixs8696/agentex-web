@@ -3,7 +3,7 @@
 import localFont from "next/font/local"
 import "./globals.css"
 import '@mdxeditor/editor/style.css'
-import { Sidebar, SidebarContent, SidebarProvider } from "@/components/ui/sidebar"
+import { Sidebar, SidebarContent, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { Circle, CheckCircle2, XCircle, Cpu, PenSquare, Menu, StopCircle, CircleEllipsis } from "lucide-react"
@@ -82,59 +82,60 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <TasksProvider>
-          <div className="flex h-screen bg-background">
-            {/* Sidebar - hidden on mobile, visible on larger screens */}
-            <div className={`hidden lg:block w-64 border-r`}>
-              <SidebarProvider>
-                <Sidebar>
-                  <SidebarContent>
-                    <SidebarContents />
-                  </SidebarContent>
-                </Sidebar>
-              </SidebarProvider>
-            </div>
+          <SidebarProvider>
+            <div className="flex w-screen h-screen bg-background">
+              {/* Collapsible Sidebar - hidden on mobile, visible on larger screens */}
+              <Sidebar className="hidden lg:block w-64">
+                <SidebarContent>
+                  <SidebarContents />
+                </SidebarContent>
+              </Sidebar>
 
-            {/* Main content area */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Mobile header - ONLY visible on small screens */}
-              <header className={`flex lg:hidden items-center justify-between p-4 border-b`}>
-                <Link href="/" className="flex items-center space-x-2 cursor-pointer">
-                  <Cpu className="w-6 h-6 text-primary" />
-                  <h2 className="text-lg font-semibold">Agentex</h2>
-                </Link>
-                <div className="flex items-center space-x-2">
-                  <Link href="/">
-                    <Button variant="ghost" size="icon" aria-label="New Task">
-                      <PenSquare className="h-5 w-5" />
-                    </Button>
+              {/* Main content area */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Mobile header - ONLY visible on small screens */}
+                <header className="flex lg:hidden items-center justify-between p-4 border-b">
+                  <Link href="/" className="flex items-center space-x-2 cursor-pointer">
+                    <Cpu className="w-6 h-6 text-primary" />
+                    <h2 className="text-lg font-semibold">Agentex</h2>
                   </Link>
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <Button variant="ghost" size="icon" aria-label="Open Menu">
-                        <Menu className="h-6 w-6" />
+                  <div className="flex items-center space-x-2">
+                    <Link href="/">
+                      <Button variant="ghost" size="icon" aria-label="New Task">
+                        <PenSquare className="h-5 w-5" />
                       </Button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="p-0 w-64">
-                      <SidebarProvider>
+                    </Link>
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button variant="ghost" size="icon" aria-label="Open Menu">
+                          <Menu className="h-6 w-6" />
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent side="left" className="p-0 w-64">
                         <Sidebar>
                           <SidebarContent>
                             <SidebarContents />
                           </SidebarContent>
                         </Sidebar>
-                      </SidebarProvider>
-                    </SheetContent>
-                  </Sheet>
-                </div>
-              </header>
+                      </SheetContent>
+                    </Sheet>
+                  </div>
+                </header>
 
-              {/* Page content - takes full height on larger screens */}
-              <main className="flex-1 overflow-auto">
-                {children}
-              </main>
+                {/* Desktop header with SidebarTrigger - ONLY visible on large screens */}
+                <header className="hidden lg:block relative items-center p-4 h-0 bg-gray-100">
+                  <SidebarTrigger className="absolute left-4 top-5 hover:bg-white" />
+                </header>
+
+                {/* Page content - takes full height on larger screens */}
+                <main className="flex-1 overflow-auto">
+                  {children}
+                </main>
+              </div>
             </div>
-          </div>
+          </SidebarProvider>
         </TasksProvider>
       </body>
-    </html >
+    </html>
   )
 }
