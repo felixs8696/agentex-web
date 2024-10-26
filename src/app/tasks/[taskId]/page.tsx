@@ -474,13 +474,13 @@ const MessageCard: React.FC<{ message: Message; onArtifactClick: (artifact: Arti
                 ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'} 
                 ${glow ? 'glow-card' : ''}`}
         >
-            <div className={`flex flex-col items-start gap-4 ${glow ? "inner rounded-sm p-3 z-1 bg-white" : "relative z-10"}`}>
+            <div className={`flex flex-col items-start ${glow ? "inner rounded-sm p-3 z-1 bg-white" : "relative z-10"}`}>
                 <div className="w-full break-word">
                     {message.content}
                 </div>
                 <div className="flex">
                     {message.artifacts && message.artifacts.length > 0 && (
-                        <div className="space-y-2">
+                        <div className="space-y-2 mt-4">
                             {message.artifacts.map((artifact, index) => (
                                 <Card key={index} className="overflow-hidden shadow-none rounded-lg">
                                     <CardContent className="p-0">
