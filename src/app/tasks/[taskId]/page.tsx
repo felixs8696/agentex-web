@@ -25,7 +25,8 @@ const POLL_INTERVAL = 1000;
 
 // Interfaces for data types
 interface Artifact {
-    title: string;
+    name: string;
+    description: string;
     content: string;
 }
 
@@ -52,6 +53,9 @@ interface Task {
     id: string;
     agent_id: string;
     messages: Message[];
+    context: {
+        artifacts: Artifact[];
+    };
     status?: string;
     status_reason?: string;
 }
@@ -85,7 +89,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
 
     const handleArtifactClick = (artifact: Artifact) => {
         setSelectedArtifact(artifact)
-        setIsRightPanelCollapsed(false)
+        setIsRightPanelCollapsed(!isRightPanelCollapsed)
     }
 
     const closePreview = () => {
@@ -276,7 +280,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
 
     return (
         <ResizablePanelGroup direction="horizontal">
-            <ResizablePanel defaultSize={isRightPanelCollapsed ? 100 : 35} minSize={35}>
+            <ResizablePanel defaultSize={isRightPanelCollapsed ? 100 : 40} minSize={40}>
                 <div className="flex flex-col h-full bg-gray-100 p-4">
                     {task && (
                         <>
@@ -286,6 +290,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                                 </AnimatePresence>
                                 <div ref={messagesEndRef} />
                             </div>
+                            <Artifacts task={task} onArtifactClick={handleArtifactClick} />
                             <Badges toast={toast} isCopied={isCopied} task={task} lastUpdateTime={lastUpdateTime} copyTaskId={copyTaskId} />
                             <div className="w-full">
                                 <form onSubmit={handleSubmit} className="mb-6">
@@ -332,15 +337,22 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                     )}
                 </div>
             </ResizablePanel>
-            {!isRightPanelCollapsed && (
-                <>
-                    <ResizableHandle className="w-px bg-border" />
-                    <ResizablePanel defaultSize={70} minSize={30} className="shadow-md">
-                        <div className="h-full flex flex-col bg-white">
-                            <div className="bg-white p-6 flex justify-between items-center">
-                                <h3 className="font-semibold text-gray-700 text-lg truncate flex-1 mr-4">{selectedArtifact?.title}</h3>
-                                <div className="flex items-center space-x-2">
-                                    {/* <TooltipProvider>
+            <AnimatePresence>
+                {!isRightPanelCollapsed && (
+                    <>
+                        <ResizableHandle className="w-px bg-border" />
+                        <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: 'auto' }}
+                            exit={{ width: 0 }}
+                            transition={{ duration: 0.5, ease: 'easeInOut' }}
+                        >
+                            <ResizablePanel defaultSize={70} minSize={30} className="h-full">
+                                <div className="h-full flex flex-col bg-white">
+                                    <div className="bg-white p-6 flex justify-between items-center">
+                                        <h3 className="font-semibold text-gray-700 text-lg truncate flex-1 mr-4">{selectedArtifact?.name}</h3>
+                                        <div className="flex items-center space-x-2">
+                                            {/* <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <Button variant="ghost" size="icon" onClick={copyContent} aria-label="Copy content">
@@ -352,34 +364,36 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider> */}
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button variant="ghost" size="icon" onClick={closePreview} aria-label="Close preview">
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Close preview</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" onClick={closePreview} aria-label="Close preview">
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Close preview</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                    </div>
+                                    <ScrollArea className="flex-1">
+                                        <div className="p-6">
+                                            <Suspense fallback={null}>
+                                                <Editor
+                                                    markdown={selectedArtifact?.content || ''}
+                                                    contentEditableClassName="!p-0"
+                                                />
+                                            </Suspense>
+                                        </div>
+                                    </ScrollArea>
                                 </div>
-                            </div>
-                            <ScrollArea className="flex-1">
-                                <div className="p-6">
-                                    <Suspense fallback={null}>
-                                        <Editor
-                                            markdown={selectedArtifact?.content || ''}
-                                            contentEditableClassName="!p-0"
-                                        />
-                                    </Suspense>
-                                </div>
-                            </ScrollArea>
-                        </div>
-                    </ResizablePanel>
-                </>
-            )}
+                            </ResizablePanel>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </ResizablePanelGroup>
     )
 }
@@ -396,6 +410,26 @@ const getStatusColor = (status: string | undefined) => {
             return "bg-gray-100 text-gray-800 border-gray-300"
     }
 }
+
+const Artifacts: React.FC<{ task: Task; onArtifactClick: (artifact: Artifact) => void }> = ({ task, onArtifactClick }) => (
+    (task && task?.context?.artifacts) && (
+        <div className="flex flex-wrap items-center justify-start gap-2 p-3">
+            {Object.entries(task?.context?.artifacts || {}).map(([name, { description, content }], index) => (
+                <Card key={index} className="overflow-hidden shadow-none rounded-lg">
+                    <CardContent className="p-0">
+                        <button
+                            onClick={() => onArtifactClick({ name, description, content })}
+                            className="flex items-center space-x-2 w-full text-left p-3 hover:bg-muted transition-colors"
+                        >
+                            <File className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-sm truncate">{name}</span>
+                        </button>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    )
+);
 
 const Badges: React.FC<{ toast: any; isCopied: boolean; task: Task; lastUpdateTime: string; copyTaskId: () => void }> = ({ isCopied, task, lastUpdateTime, copyTaskId }) => (
     task && (
@@ -489,7 +523,7 @@ const MessageCard: React.FC<{ message: Message; onArtifactClick: (artifact: Arti
                                             className="flex items-center space-x-2 w-full text-left p-3 hover:bg-muted transition-colors"
                                         >
                                             <File className="h-4 w-4 flex-shrink-0" />
-                                            <span className="text-sm truncate">{artifact.title}</span>
+                                            <span className="text-sm truncate">{artifact.name}</span>
                                         </button>
                                     </CardContent>
                                 </Card>

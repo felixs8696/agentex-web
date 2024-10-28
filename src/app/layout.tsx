@@ -123,7 +123,7 @@ export default function RootLayout({
                 </header>
 
                 {/* Desktop header with SidebarTrigger - ONLY visible on large screens */}
-                <header className="hidden lg:block relative items-center p-4 h-0 bg-gray-100">
+                <header className="hidden lg:block relative items-center h-0 bg-gray-100">
                   <SidebarTrigger className="absolute left-4 top-5 hover:bg-white" />
                 </header>
 
