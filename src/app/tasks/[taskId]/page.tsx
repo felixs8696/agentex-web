@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, X, Sparkles, ClipboardList, Activity, Clock, Loader2, Hash, Copy, Check, Ellipsis, Paperclip, File } from 'lucide-react'
+import { Send, X, Sparkles, ClipboardList, Activity, Clock, Loader2, Hash, Copy, Check, Ellipsis, Paperclip, File, GripVertical } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { createTask, getTask, modifyTask } from '@/lib/api/tasks'
 import { getAgent } from '@/lib/api/agents'
@@ -11,12 +11,11 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from "@/hooks/use-toast"
 import { useTasks } from '@/context/TasksContext'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 
 import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { ScrollArea } from '@/components/ui/scroll-area'
 
 const Editor = dynamic(() => import('@/components/editor/markdown-editor'), { ssr: false })
 
@@ -85,23 +84,12 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
     const [isCopied, setIsCopied] = useState(false);
 
     const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null)
-    const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(true)
+    const [isSheetOpen, setIsSheetOpen] = useState(false)
 
     const handleArtifactClick = (artifact: Artifact) => {
         setSelectedArtifact(artifact)
-        setIsRightPanelCollapsed(!isRightPanelCollapsed)
+        setIsSheetOpen(true)
     }
-
-    const closePreview = () => {
-        setSelectedArtifact(null)
-        setIsRightPanelCollapsed(true)
-    }
-
-    useEffect(() => {
-        if (!selectedArtifact) {
-            setIsRightPanelCollapsed(true)
-        }
-    }, [selectedArtifact])
 
     // Fetch task and agent data on initial render
     useEffect(() => {
@@ -123,7 +111,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
             }
         };
         fetchData();
-    }, [taskId]);
+    }, [taskId, setSelectedTask]);
 
     // Function to poll task updates
     const fetchTask = useCallback(async () => {
@@ -142,7 +130,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                 setError("Failed to fetch task updates");
             }
         }
-    }, [task]);
+    }, [task, setSelectedTask]);
 
     // Polling logic with useEffect
     useEffect(() => {
@@ -224,37 +212,14 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
     };
 
     const renderMessages = (task: Task) => {
-        return agentAndUserMessages(task).map((message, index) => {
-            // message.artifacts = [{
-            //     title: "Sample artifact",
-            //     content: "Hello **world**!"
-            // }]
-            return (
-                (message.role === "assistant") ? (
-                    (message.content) ? (
-                        <MessageCard
-                            key={index}
-                            message={message}
-                            onArtifactClick={handleArtifactClick}
-                        />
-                    ) : (
-                        (message.tool_calls && message?.tool_calls.length > 0) ? (
-                            <MessageCard
-                                key={index}
-                                message={{ ...message, content: "Please wait while I take some actions..." }}
-                                onArtifactClick={handleArtifactClick}
-                                glow
-                            />
-                        ) : null
-                    )) : (
-                    <MessageCard
-                        key={index}
-                        message={message}
-                        onArtifactClick={handleArtifactClick}
-                    />
-                )
-            )
-        })
+        return agentAndUserMessages(task).map((message, index) => (
+            <MessageCard
+                key={index}
+                message={message}
+                onArtifactClick={handleArtifactClick}
+                glow={message.role === "assistant" && !message.content && message.tool_calls && message.tool_calls.length > 0}
+            />
+        ));
     };
 
     const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -279,12 +244,12 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
     const taskInTerminalState = task?.status === "FAILED" || task?.status === "COMPLETED" || task?.status === "CANCELED";
 
     return (
-        <ResizablePanelGroup direction="horizontal">
-            <ResizablePanel defaultSize={isRightPanelCollapsed ? 100 : 40} minSize={40}>
-                <div className="flex flex-col h-full bg-gray-100 p-4">
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+            <ResizablePanel defaultSize={100} >
+                <div className="flex flex-col h-full bg-gray-100 p-4 pt-0">
                     {task && (
                         <>
-                            <div className="flex-grow overflow-y-auto p-4 space-y-4">
+                            <div className="flex-grow overflow-y-auto p-4 pt-8 space-y-4">
                                 <AnimatePresence>
                                     {renderMessages(task)}
                                 </AnimatePresence>
@@ -337,63 +302,28 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                     )}
                 </div>
             </ResizablePanel>
-            <AnimatePresence>
-                {!isRightPanelCollapsed && (
-                    <>
-                        <ResizableHandle className="w-px bg-border" />
-                        <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: 'auto' }}
-                            exit={{ width: 0 }}
-                            transition={{ duration: 0.5, ease: 'easeInOut' }}
-                        >
-                            <ResizablePanel defaultSize={70} minSize={30} className="h-full">
-                                <div className="h-full flex flex-col bg-white">
-                                    <div className="bg-white p-6 flex justify-between items-center">
-                                        <h3 className="font-semibold text-gray-700 text-lg truncate flex-1 mr-4">{selectedArtifact?.name}</h3>
-                                        <div className="flex items-center space-x-2">
-                                            {/* <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button variant="ghost" size="icon" onClick={copyContent} aria-label="Copy content">
-                                                    {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>{isCopied ? 'Copied!' : 'Copy content'}</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider> */}
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button variant="ghost" size="icon" onClick={closePreview} aria-label="Close preview">
-                                                            <X className="h-4 w-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Close preview</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                        </div>
-                                    </div>
-                                    <ScrollArea className="flex-1">
-                                        <div className="p-6">
-                                            <Suspense fallback={null}>
-                                                <Editor
-                                                    markdown={selectedArtifact?.content || ''}
-                                                    contentEditableClassName="!p-0"
-                                                />
-                                            </Suspense>
-                                        </div>
-                                    </ScrollArea>
-                                </div>
-                            </ResizablePanel>
-                        </motion.div>
-                    </>
+            {/* <ResizableHandle /> */}
+            <ResizablePanel maxSize={isSheetOpen ? 60 : 0} defaultSize={0} minSize={isSheetOpen ? 60 : 0} className="transition-all duration-1000 ease-out">
+                {isSheetOpen && selectedArtifact && (
+                    <div className="h-full flex flex-col bg-white p-4">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-semibold">{selectedArtifact.name}</h2>
+                            <Button variant="ghost" size="icon" onClick={() => setIsSheetOpen(false)}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <p className="text-sm text-gray-500 mb-4">{selectedArtifact.description}</p>
+                        <ScrollArea className="flex-grow">
+                            <Suspense fallback={<div>Loading...</div>}>
+                                <Editor
+                                    markdown={selectedArtifact.content || ''}
+                                    contentEditableClassName="!p-0"
+                                />
+                            </Suspense>
+                        </ScrollArea>
+                    </div>
                 )}
-            </AnimatePresence>
+            </ResizablePanel>
         </ResizablePanelGroup>
     )
 }
@@ -440,7 +370,7 @@ const Badges: React.FC<{ toast: any; isCopied: boolean; task: Task; lastUpdateTi
                 <Button
                     variant="ghost"
                     size="icon"
-                    className={`h-6 w-6 ml-1 transition-colors ${isCopied
+                    className={`h-6 w-6  ml-1 transition-colors ${isCopied
                         ? "bg-green-100 text-green-800 hover:bg-green-200 hover:text-green-900"
                         : "hover:bg-gray-200 hover:text-gray-900"
                         }`}
@@ -466,36 +396,6 @@ const Badges: React.FC<{ toast: any; isCopied: boolean; task: Task; lastUpdateTi
     )
 )
 
-// Task information component
-const TaskInfoCard: React.FC<{ task: Task; lastUpdateTime: string }> = ({ task, lastUpdateTime }) => (
-    <Card className="rounded-sm shadow-none">
-        <CardContent className="p-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-                <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                <div>
-                    <p className="text-xs font-medium text-muted-foreground">Task ID</p>
-                    <p className="text-sm font-semibold truncate">{task.id}</p>
-                </div>
-            </div>
-            <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-muted-foreground" />
-                <div>
-                    <p className="text-xs font-medium text-muted-foreground">Status</p>
-                    <p className="text-sm font-semibold">{task.status}</p>
-                </div>
-            </div>
-            <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <div>
-                    <p className="text-xs font-medium text-muted-foreground">Last Update</p>
-                    <p className="text-sm font-semibold">{lastUpdateTime}</p>
-                </div>
-            </div>
-        </CardContent>
-    </Card>
-);
-
-
 const MessageCard: React.FC<{ message: Message; onArtifactClick: (artifact: Artifact) => void, glow?: boolean }> = ({ message, onArtifactClick, glow = false }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -510,7 +410,7 @@ const MessageCard: React.FC<{ message: Message; onArtifactClick: (artifact: Arti
         >
             <div className={`flex flex-col items-start ${glow ? "inner rounded-sm p-3 z-1 bg-white" : "relative z-10"}`}>
                 <div className="w-full break-word">
-                    {message.content}
+                    {message.content || (message.tool_calls && message.tool_calls.length > 0 ? "Please wait while I take some actions..." : "")}
                 </div>
                 <div className="flex">
                     {message.artifacts && message.artifacts.length > 0 && (
@@ -533,11 +433,7 @@ const MessageCard: React.FC<{ message: Message; onArtifactClick: (artifact: Arti
                 </div>
             </div>
         </div>
-    </motion.div >
+    </motion.div>
 );
-
-
-
-
 
 export default Page;

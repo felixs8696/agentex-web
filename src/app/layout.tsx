@@ -3,7 +3,7 @@
 import localFont from "next/font/local"
 import "./globals.css"
 import '@mdxeditor/editor/style.css'
-import { Sidebar, SidebarContent, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { Sidebar, SidebarContent, SidebarProvider, SidebarRail, SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { Circle, CheckCircle2, XCircle, Cpu, PenSquare, Menu, StopCircle, CircleEllipsis } from "lucide-react"
@@ -33,6 +33,7 @@ const statusIcons: Record<string, { icon: React.ComponentType, color: string }> 
 
 const SidebarContents = () => {
   const { tasks, selectedTask, setSelectedTask } = useTasks();
+  const { open } = useSidebar()
 
   return (
     <div className="flex flex-col h-full">
@@ -69,6 +70,7 @@ const SidebarContents = () => {
           )
         })}
       </ScrollArea>
+      <SidebarRail />
     </div>
   )
 }
@@ -78,6 +80,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
@@ -123,9 +126,9 @@ export default function RootLayout({
                 </header>
 
                 {/* Desktop header with SidebarTrigger - ONLY visible on large screens */}
-                <header className="hidden lg:block relative items-center h-0 bg-gray-100">
-                  <SidebarTrigger className="absolute left-4 top-5 hover:bg-white" />
-                </header>
+                {/* <header className="hidden lg:block relative items-center h-0 bg-gray-100 z-10">
+                  <SidebarTrigger className="absolute left-4 bottom-5 bg-gray-100 z-10 hover:bg-white" />
+                </header> */}
 
                 {/* Page content - takes full height on larger screens */}
                 <main className="flex-1 overflow-auto">
