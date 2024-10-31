@@ -1,6 +1,6 @@
 "use client";
 
-import { BlockTypeSelect, BoldItalicUnderlineToggles, MDXEditor, MDXEditorMethods, MDXEditorProps, UndoRedo, codeBlockPlugin, diffSourcePlugin, directivesPlugin, frontmatterPlugin, headingsPlugin, imagePlugin, jsxPlugin, linkDialogPlugin, linkPlugin, listsPlugin, markdownShortcutPlugin, quotePlugin, realmPlugin, tablePlugin, thematicBreakPlugin, toolbarPlugin } from "@mdxeditor/editor";
+import { BlockTypeSelect, BoldItalicUnderlineToggles, DiffSourceToggleWrapper, MDXEditor, MDXEditorMethods, MDXEditorProps, UndoRedo, codeBlockPlugin, codeMirrorPlugin, diffSourcePlugin, directivesPlugin, frontmatterPlugin, headingsPlugin, imagePlugin, jsxPlugin, linkDialogPlugin, linkPlugin, listsPlugin, markdownShortcutPlugin, quotePlugin, realmPlugin, tablePlugin, thematicBreakPlugin, toolbarPlugin } from "@mdxeditor/editor";
 import { FC } from "react";
 
 interface EditorProps extends MDXEditorProps {
@@ -22,7 +22,7 @@ const Editor: FC<EditorProps> = (props: EditorProps) => {
         linkPlugin(),
         imagePlugin(),
         tablePlugin(),
-        codeBlockPlugin(),
+        codeBlockPlugin({ defaultCodeBlockLanguage: 'python' }),
         linkDialogPlugin(),
         frontmatterPlugin(),
         directivesPlugin(),
@@ -36,9 +36,11 @@ const Editor: FC<EditorProps> = (props: EditorProps) => {
                     <BlockTypeSelect />
                     <UndoRedo />
                     <BoldItalicUnderlineToggles />
+                    <DiffSourceToggleWrapper />
                 </>
             )
         }),
+        codeMirrorPlugin(),
         thematicBreakPlugin(),
         markdownShortcutPlugin()
     ];
@@ -49,15 +51,16 @@ const Editor: FC<EditorProps> = (props: EditorProps) => {
         linkPlugin(),
         imagePlugin(),
         tablePlugin(),
-        codeBlockPlugin(),
+        codeBlockPlugin({ defaultCodeBlockLanguage: 'python' }),
         linkDialogPlugin(),
         frontmatterPlugin(),
         directivesPlugin(),
         diffSourcePlugin(),
         jsxPlugin(),
         tablePlugin(),
+        codeMirrorPlugin(),
         thematicBreakPlugin(),
-        markdownShortcutPlugin()
+        markdownShortcutPlugin(),
     ];
     return (
         <MDXEditor

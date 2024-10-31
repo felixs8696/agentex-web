@@ -417,6 +417,9 @@ const MessageCard: React.FC<{ message: Message; onArtifactClick: (artifact: Arti
                         markdown={message.content || (message.tool_calls && message.tool_calls.length > 0 ? "Please wait while I take some actions..." : "")}
                         contentEditableClassName="!p-0"
                         className={message.role === 'user' ? 'dark-theme text-white' : ''}
+                        onError={(msg) => {
+                            console.warn(msg)
+                        }}
                     />
                 </div>
                 <div className="flex">
