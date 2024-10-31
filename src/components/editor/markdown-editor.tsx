@@ -1,6 +1,6 @@
 "use client";
 
-import { MDXEditor, MDXEditorMethods, MDXEditorProps, headingsPlugin } from "@mdxeditor/editor";
+import { BlockTypeSelect, BoldItalicUnderlineToggles, MDXEditor, MDXEditorMethods, MDXEditorProps, UndoRedo, codeBlockPlugin, diffSourcePlugin, directivesPlugin, frontmatterPlugin, headingsPlugin, imagePlugin, jsxPlugin, linkDialogPlugin, linkPlugin, listsPlugin, markdownShortcutPlugin, quotePlugin, realmPlugin, tablePlugin, thematicBreakPlugin, toolbarPlugin } from "@mdxeditor/editor";
 import { FC } from "react";
 
 interface EditorProps extends MDXEditorProps {
@@ -13,13 +13,59 @@ interface EditorProps extends MDXEditorProps {
  * proxying the ref is necessary. Next.js dynamically imported components don't support refs.
  */
 const Editor: FC<EditorProps> = (props: EditorProps) => {
-    const { markdown, editorRef, ...extra } = props;
+    const { markdown, editorRef, readOnly, ...extra } = props;
+    console.log(`Rendering Editor with markdown: ${markdown}`);
+    const allPlugins = [
+        headingsPlugin(),
+        listsPlugin(),
+        quotePlugin(),
+        linkPlugin(),
+        imagePlugin(),
+        tablePlugin(),
+        codeBlockPlugin(),
+        linkDialogPlugin(),
+        frontmatterPlugin(),
+        directivesPlugin(),
+        diffSourcePlugin(),
+        jsxPlugin(),
+        tablePlugin(),
+        toolbarPlugin({
+            toolbarContents: () => (
+                <>
+                    {' '}
+                    <BlockTypeSelect />
+                    <UndoRedo />
+                    <BoldItalicUnderlineToggles />
+                </>
+            )
+        }),
+        thematicBreakPlugin(),
+        markdownShortcutPlugin()
+    ];
+    const readOnlyPlugins = [
+        headingsPlugin(),
+        listsPlugin(),
+        quotePlugin(),
+        linkPlugin(),
+        imagePlugin(),
+        tablePlugin(),
+        codeBlockPlugin(),
+        linkDialogPlugin(),
+        frontmatterPlugin(),
+        directivesPlugin(),
+        diffSourcePlugin(),
+        jsxPlugin(),
+        tablePlugin(),
+        thematicBreakPlugin(),
+        markdownShortcutPlugin()
+    ];
     return (
         <MDXEditor
             onChange={(e) => console.log(e)}
             ref={editorRef}
             markdown={markdown}
-            plugins={[headingsPlugin()]}
+            plugins={readOnly ? readOnlyPlugins : allPlugins}
+            readOnly={readOnly}
             {...extra}
         />
     );

@@ -88,6 +88,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
 
     const handleArtifactClick = (artifact: Artifact) => {
         setSelectedArtifact(artifact)
+        console.log("Artifact clicked:", artifact)
         setIsSheetOpen(true)
     }
 
@@ -410,7 +411,13 @@ const MessageCard: React.FC<{ message: Message; onArtifactClick: (artifact: Arti
         >
             <div className={`flex flex-col items-start ${glow ? "inner rounded-sm p-3 z-1 bg-white" : "relative z-10"}`}>
                 <div className="w-full break-word">
-                    {message.content || (message.tool_calls && message.tool_calls.length > 0 ? "Please wait while I take some actions..." : "")}
+                    {/* {message.content || (message.tool_calls && message.tool_calls.length > 0 ? "Please wait while I take some actions..." : "")} */}
+                    <Editor
+                        readOnly
+                        markdown={message.content || (message.tool_calls && message.tool_calls.length > 0 ? "Please wait while I take some actions..." : "")}
+                        contentEditableClassName="!p-0"
+                        className={message.role === 'user' ? 'dark-theme text-white' : ''}
+                    />
                 </div>
                 <div className="flex">
                     {message.artifacts && message.artifacts.length > 0 && (
