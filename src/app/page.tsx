@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useTasks } from '@/context/TasksContext';
 
-
 interface Agent {
     id: string;
     name: string;
@@ -33,8 +32,9 @@ interface GroupedAgent {
 
 export default function ComposePage() {
     const [prompt, setPrompt] = useState("")
-    const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
     const [groupedAgents, setGroupedAgents] = useState<GroupedAgent[]>([])
+    const [selectedVersions, setSelectedVersions] = useState<Record<string, Agent>>({})
+    const [activeAgent, setActiveAgent] = useState<string | null>(null)
     const router = useRouter()
     const { refreshTasks } = useTasks()
 
@@ -67,9 +67,16 @@ export default function ComposePage() {
 
                 setGroupedAgents(grouped)
 
-                // Set the default selected agent to the latest version of the first group
+                // Set the default selected version for each group
+                const initialSelectedVersions: Record<string, Agent> = {}
+                grouped.forEach(group => {
+                    initialSelectedVersions[group.name] = group.versions[0]
+                })
+                setSelectedVersions(initialSelectedVersions)
+
+                // Set the first agent as active
                 if (grouped.length > 0) {
-                    setSelectedAgent(grouped[0].versions[0])
+                    setActiveAgent(grouped[0].name)
                 }
             } catch (error) {
                 console.error('Error fetching agents:', error)
@@ -81,6 +88,7 @@ export default function ComposePage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        const selectedAgent = selectedVersions[activeAgent || '']
         if (prompt.trim() && selectedAgent) {
             try {
                 const response = await fetch('/api/create-task', {
@@ -110,6 +118,14 @@ export default function ComposePage() {
         }
     }
 
+    const handleVersionSelect = (groupName: string, agent: Agent) => {
+        setSelectedVersions(prev => ({
+            ...prev,
+            [groupName]: agent
+        }))
+        setActiveAgent(groupName)
+    }
+
     return (
         <div className="flex-1 p-4 overflow-y-auto h-full">
             <div className="flex flex-col items-center justify-center min-h-full">
@@ -122,12 +138,16 @@ export default function ComposePage() {
                         <DropdownMenu key={group.name}>
                             <DropdownMenuTrigger asChild>
                                 <Button
-                                    variant={selectedAgent?.name === group.name ? "default" : "outline"}
-                                    className="h-auto py-2 px-3 text-sm w-full"
+                                    variant={activeAgent === group.name ? "default" : "outline"}
+                                    className={`h-auto py-2 px-3 text-sm w-full ${activeAgent === group.name ? "bg-primary text-primary-foreground" : ""
+                                        }`}
+                                    onClick={() => setActiveAgent(group.name)}
                                 >
                                     <div className="flex flex-col items-start text-left break-all">
                                         <span className="font-medium">{group.name}</span>
-                                        <span className="text-xs text-muted-foreground">v{selectedAgent ? selectedAgent.version : group.versions[0].version}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            v{selectedVersions[group.name]?.version || group.versions[0].version}
+                                        </span>
                                     </div>
                                     <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
                                 </Button>
@@ -136,7 +156,7 @@ export default function ComposePage() {
                                 {group.versions.map((agent) => (
                                     <DropdownMenuItem
                                         key={agent.id}
-                                        onSelect={() => setSelectedAgent(agent)}
+                                        onSelect={() => handleVersionSelect(group.name, agent)}
                                     >
                                         v{agent.version}
                                     </DropdownMenuItem>
@@ -145,11 +165,11 @@ export default function ComposePage() {
                         </DropdownMenu>
                     ))}
                 </div>
-                {selectedAgent && (
+                {activeAgent && (
                     <div className="w-full max-w-2xl">
                         <form onSubmit={handleSubmit} className="relative">
                             <Textarea
-                                placeholder={`Enter a task for the ${selectedAgent.name} agent to perform...`}
+                                placeholder={`Enter a task for the ${activeAgent} agent to perform...`}
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
                                 className="pr-16 rounded-xl min-h-[48px] resize-none"

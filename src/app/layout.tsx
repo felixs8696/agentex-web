@@ -54,8 +54,9 @@ const SidebarContents = () => {
         </h3>
       </div>
       <ScrollArea className="flex-grow px-4">
-        {tasks.map((task) => {
-          const isSelected = selectedTask && selectedTask.id === task.id;
+        {tasks.map((originalTask) => {
+          const isSelected = selectedTask && selectedTask.id === originalTask.id;
+          const task = isSelected ? selectedTask : originalTask;
           const { icon: StatusIcon, color } = statusIcons[task.status] || statusIcons.RUNNING;
           console.log(`task ${task.prompt}: ${task.status}`)
           return (

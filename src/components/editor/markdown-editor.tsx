@@ -14,7 +14,6 @@ interface EditorProps extends MDXEditorProps {
  */
 const Editor: FC<EditorProps> = (props: EditorProps) => {
     const { markdown, editorRef, readOnly, ...extra } = props;
-    console.log(`Rendering Editor with markdown: ${markdown}`);
     const allPlugins = [
         headingsPlugin(),
         listsPlugin(),

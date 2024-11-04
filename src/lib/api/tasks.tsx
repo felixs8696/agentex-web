@@ -37,7 +37,7 @@ export const getTask = async (taskId: string) => {
             throw new Error(`Failed to fetch task status: ${res.status} ${res.statusText}`);
         }
         const data = await res.json();
-        console.log("Task fetched:", data);
+        // console.log("Task fetched:", data);
         return data;
     } catch (error) {
         console.error("Error in getTask:", error);

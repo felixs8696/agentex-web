@@ -37,6 +37,20 @@ body {
   @apply mt-2 text-sm md:text-base font-medium leading-relaxed mb-1 text-gray-400 dark:text-gray-500;
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out forwards;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
