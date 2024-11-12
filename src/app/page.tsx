@@ -18,9 +18,6 @@ interface Agent {
     name: string;
     description: string;
     version: string;
-    model: string;
-    instructions: string;
-    actions: string[];
     status: string;
     status_reason: string;
 }
@@ -46,9 +43,10 @@ export default function ComposePage() {
                     throw new Error('Failed to fetch agents')
                 }
                 const data: Agent[] = await response.json()
+                const readyAgents = data.filter(agent => agent.status.toLowerCase() === 'ready')
 
                 // Group agents by name and sort versions
-                const grouped = data.reduce((acc: GroupedAgent[], agent) => {
+                const grouped = readyAgents.reduce((acc: GroupedAgent[], agent) => {
                     const existingGroup = acc.find(g => g.name === agent.name)
                     if (existingGroup) {
                         existingGroup.versions.push(agent)
@@ -98,9 +96,8 @@ export default function ComposePage() {
                     },
                     body: JSON.stringify({
                         agent_name: selectedAgent.name,
-                        agent_version: selectedAgent.version,
                         prompt: prompt,
-                        require_approval: true,
+                        require_approval: false,
                     }),
                 })
 

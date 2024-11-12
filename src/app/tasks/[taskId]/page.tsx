@@ -48,10 +48,14 @@ interface Agent {
     status_reason: string;
 }
 
+interface Thread {
+    messages: Message[];
+}
+
 interface Task {
     id: string;
     agent_id: string;
-    messages: Message[];
+    threads: Map<string, Thread>;
     context: {
         artifacts: Artifact[];
     };
@@ -208,7 +212,12 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
 
     // Filter and sort messages based on role
     const agentAndUserMessages = (task: Task, sort: "asc" | "desc" = "asc") => {
-        const messages = task.messages.filter(message => message.role === "assistant" || message.role === "user");
+        if (!task || !task.threads) return [];
+        const flattendMessages: Message[] = Object.values(task.threads || {}).reduce((acc, thread) => {
+            acc.push(...(thread.messages || []));
+            return acc;
+        }, []); // Add an empty array as the initial value
+        const messages = flattendMessages.filter(message => message.role === "assistant" || message.role === "user");
         return sort === "asc" ? messages : messages.reverse();
     };
 
@@ -218,7 +227,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                 key={index}
                 message={message}
                 onArtifactClick={handleArtifactClick}
-                glow={message.role === "assistant" && !message.content && message.tool_calls && message.tool_calls.length > 0}
+                glow={message.role === "assistant" && message.tool_calls && message.tool_calls.length > 0}
             />
         ));
     };
@@ -397,6 +406,18 @@ const Badges: React.FC<{ toast: any; isCopied: boolean; task: Task; lastUpdateTi
     )
 )
 
+const messageContent = (message: Message) => {
+    if (message.content) return message.content;
+    if (message.tool_calls && message.tool_calls.length > 0) {
+        const preface = "Please wait while I perform the following actions...\n\n"
+        const tool_calls = message.tool_calls.map((tool_call) => {
+            return `**${tool_call.function.name}**`;
+        }).join(", ");
+        return preface + tool_calls;
+    }
+    return "";
+}
+
 const MessageCard: React.FC<{ message: Message; onArtifactClick: (artifact: Artifact) => void, glow?: boolean }> = ({ message, onArtifactClick, glow = false }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -411,10 +432,9 @@ const MessageCard: React.FC<{ message: Message; onArtifactClick: (artifact: Arti
         >
             <div className={`flex flex-col items-start ${glow ? "inner rounded-sm p-3 z-1 bg-white" : "relative z-10"}`}>
                 <div className="w-full break-word">
-                    {/* {message.content || (message.tool_calls && message.tool_calls.length > 0 ? "Please wait while I take some actions..." : "")} */}
                     <Editor
                         readOnly
-                        markdown={message.content || (message.tool_calls && message.tool_calls.length > 0 ? "Please wait while I take some actions..." : "")}
+                        markdown={messageContent(message)}
                         contentEditableClassName="!p-0"
                         className={message.role === 'user' ? 'dark-theme text-white' : ''}
                         onError={(msg) => {

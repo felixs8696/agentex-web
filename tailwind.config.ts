@@ -87,9 +87,19 @@ const config: Config = {
 					'0%': { transform: 'rotate(0deg)' },
 					'100%': { transform: 'rotate(360deg)' },
 				},
+				glowing: {
+					'0%': { backgroundPosition: '0% 50%' },
+					'50%': { backgroundPosition: '100% 50%' },
+					'100%': { backgroundPosition: '0% 50%' },
+				},
+				glowIntensity: {
+					'0%': { filter: 'blur(8px)', opacity: '0.8' },
+					'100%': { filter: 'blur(12px)', opacity: '0.9' },
+				},
 			},
 			animation: {
 				rotate: 'rotate 8s linear infinite',
+				glowing: 'glowing 3s linear infinite, glowIntensity 1.5s ease-in-out infinite alternate',
 			},
 		}
 	},
