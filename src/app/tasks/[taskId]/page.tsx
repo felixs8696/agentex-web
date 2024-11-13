@@ -72,7 +72,7 @@ interface PageProps {
 // Main Page component
 const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
     const { toast } = useToast()
-    const { setSelectedTask } = useTasks();
+    const { refreshTasks, setSelectedTask } = useTasks();
 
     // State variables
     const [isThinking, setIsThinking] = useState(false);
@@ -187,6 +187,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                 setIsApproving(true);
                 await modifyTask(task.id, "approve");
                 await fetchTask(); // Refresh task after approval
+                await refreshTasks(); // Refresh tasks list
             } catch (err) {
                 setError("Failed to approve task");
             } finally {
@@ -202,6 +203,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                 setIsCancelling(true);
                 await modifyTask(task.id, "cancel");
                 await fetchTask(); // Refresh task after cancellation
+                await refreshTasks(); // Refresh tasks list
             } catch (err) {
                 setError("Failed to cancel task");
             } finally {

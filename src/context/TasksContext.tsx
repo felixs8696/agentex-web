@@ -5,7 +5,7 @@ import { Task } from '@/types/Task';
 interface TasksContextProps {
     tasks: Task[];
     selectedTask: Task | null;
-    refreshTasks: () => void;
+    refreshTasks: () => Promise<void>;
     setSelectedTask: (task: Task) => void;
 }
 
@@ -13,7 +13,7 @@ interface TasksContextProps {
 const TasksContext = createContext<TasksContextProps>({
     tasks: [],
     selectedTask: null,
-    refreshTasks: () => { },
+    refreshTasks: async () => { },
     setSelectedTask: () => { },
 });
 
