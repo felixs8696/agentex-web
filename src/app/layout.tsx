@@ -57,8 +57,11 @@ const SidebarContents = () => {
         {tasks.map((task) => {
           const isSelected = selectedTask && selectedTask.id === task.id;
           // const task = isSelected ? selectedTask : originalTask;
-          const { icon: StatusIcon, color } = statusIcons[task.status] || statusIcons.RUNNING;
-          console.log(`task ${task.prompt}: ${task.status}`)
+          if (statusIcons[task.status] === undefined) {
+            console.warn(`Unknown status: ${task.status}`);
+            console.warn(`Task: ${JSON.stringify(task)}`);
+          }
+          const { icon: StatusIcon, color } = statusIcons[task.status] || { icon: Circle, color: 'text-gray-500' };
           return (
             <Link
               key={task.id}

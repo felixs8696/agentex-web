@@ -63,7 +63,7 @@ const Editor: FC<EditorProps> = (props: EditorProps) => {
     ];
     return (
         <MDXEditor
-            onChange={(e) => console.log(e)}
+            // onChange={(e) => console.log(e)}
             ref={editorRef}
             markdown={markdown}
             plugins={readOnly ? readOnlyPlugins : allPlugins}

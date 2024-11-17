@@ -34,7 +34,6 @@ interface Message {
     role: 'assistant' | 'user';
     content: string;
     tool_calls?: any[];
-    artifacts?: Artifact[];
 }
 
 interface Agent {
@@ -108,6 +107,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                         setTask(fetchedTask);
                         setSelectedTask(fetchedTask);
                         setAgent(fetchedAgent);
+                        console.log("Task fetched:", fetchedTask);
                     } else {
                         setError("Failed to fetch task");
                     }
@@ -231,7 +231,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                 key={index}
                 title={actionTaken ? "Thinking..." : message.role === "assistant" ? "Agent" : "User"}
                 content={message.content}
-                position={message.role === "assistant" ? "left" : "right"}
+                position={message.role === "user" ? "right" : "left"}
                 aiActionTaken={actionTaken}
             />
         });
@@ -359,7 +359,7 @@ const getStatusColor = (status: string | undefined) => {
 const Artifacts: React.FC<{ task: Task; onArtifactClick: (artifact: Artifact) => void }> = ({ task, onArtifactClick }) => (
     (task && task?.context?.artifacts) && (
         <div className="flex flex-wrap items-center justify-start gap-2 p-3">
-            {Object.entries(task?.context?.artifacts || {}).map(([name, { description, content }], index) => (
+            {Object.entries(task?.context?.artifacts || {}).map(([_, { name, description, content }], index) => (
                 <Card key={index} className="overflow-hidden shadow-none rounded-lg">
                     <CardContent className="p-0">
                         <button
@@ -422,53 +422,5 @@ const messageContent = (message: Message) => {
     }
     return "";
 }
-
-// const MessageCard: React.FC<{ message: Message; onArtifactClick: (artifact: Artifact) => void, glow?: boolean }> = ({ message, onArtifactClick, glow = false }) => (
-//     <motion.div
-//         initial={{ opacity: 0, y: 20 }}
-//         animate={{ opacity: 1, y: 0 }}
-//         exit={{ opacity: 0, y: -20 }}
-//         className={`relative flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-//     >
-//         <div
-//             className={`relative max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl p-4 rounded-lg border-2 
-//                 ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'} 
-//                 ${glow ? 'glow-card' : ''}`}
-//         >
-//             <div className={`flex flex-col items-start ${glow ? "inner rounded-sm p-3 z-1 bg-white" : "relative z-10"}`}>
-//                 <div className="w-full break-word">
-//                     <Editor
-//                         readOnly
-//                         markdown={messageContent(message)}
-//                         contentEditableClassName="!p-0"
-//                         className={message.role === 'user' ? 'dark-theme text-white' : ''}
-//                         onError={(msg) => {
-//                             console.warn(msg)
-//                         }}
-//                     />
-//                 </div>
-//                 <div className="flex">
-//                     {message.artifacts && message.artifacts.length > 0 && (
-//                         <div className="space-y-2 mt-4">
-//                             {message.artifacts.map((artifact, index) => (
-//                                 <Card key={index} className="overflow-hidden shadow-none rounded-lg">
-//                                     <CardContent className="p-0">
-//                                         <button
-//                                             onClick={() => onArtifactClick(artifact)}
-//                                             className="flex items-center space-x-2 w-full text-left p-3 hover:bg-muted transition-colors"
-//                                         >
-//                                             <File className="h-4 w-4 flex-shrink-0" />
-//                                             <span className="text-sm truncate">{artifact.name}</span>
-//                                         </button>
-//                                     </CardContent>
-//                                 </Card>
-//                             ))}
-//                         </div>
-//                     )}
-//                 </div>
-//             </div>
-//         </div>
-//     </motion.div>
-// );
 
 export default Page;
