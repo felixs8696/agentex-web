@@ -57,7 +57,7 @@ interface Task {
     agent_id: string;
     threads: Map<string, Thread>;
     context: {
-        artifacts: Artifact[];
+        artifacts: Record<string, Artifact>;
     };
     status?: string;
     status_reason?: string;
@@ -331,6 +331,7 @@ const Page: React.FC<PageProps> = ({ params: { taskId } }) => {
                         <ScrollArea className="flex-grow">
                             <Suspense fallback={<div>Loading...</div>}>
                                 <Editor
+                                    key={selectedArtifact.name}
                                     markdown={selectedArtifact.content || ''}
                                     contentEditableClassName="!p-0"
                                 />

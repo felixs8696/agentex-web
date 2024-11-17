@@ -17,7 +17,7 @@ export default function MessageCard({ title, content, position, aiActionTaken }:
             exit={{ opacity: 0, y: -20 }}
             className={`relative flex ${position === 'right' ? 'justify-end' : 'justify-start'}`}
         >
-            <Card className={`w-full max-w-md overflow-hidden ${position === 'right' ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'}`}>
+            <Card className={`w-full max-w-[45%] overflow-hidden ${position === 'right' ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'}`}>
                 {aiActionTaken && (
                     <div className="animate-pulse bg-gradient-to-r from-blue-400 via-teal-500 to-purple-500 h-1"></div>
                 )}
